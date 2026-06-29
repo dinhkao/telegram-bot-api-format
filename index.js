@@ -1,7 +1,7 @@
-// Load token from .env file
+const { handleWhat, handlePopup, handleCallback } = require("./routes/table");
+
 const { readFileSync } = require("fs");
-const { resolve } = require("path");
-const env = readFileSync(resolve(__dirname, ".env"), "utf-8");
+const env = readFileSync(".env", "utf-8");
 const TOKEN = env.match(/BOT_TOKEN=(.+)/)[1].trim();
 const API = `https://api.telegram.org/bot${TOKEN}`;
 
@@ -21,59 +21,21 @@ async function getUpdates(offset) {
 
 async function handleMessage(msg) {
   const chatId = msg.chat.id;
-  const text = msg.text || "";
+  const cmd = (msg.text || "").trim().toLowerCase();
 
-  const cmd = text.trim().toLowerCase();
+  if (cmd === "what") return handleWhat(chatId);
+  if (cmd === "popup") return handlePopup(chatId);
 
-  if (cmd === "what") {
-    // Rich Markdown table with header + inline formatting showcase
-    const markdown = `| # | 🏷️ Name | 📊 Score | ⭐ Rank | 🔗 Link | 📝 Note |
-|:--|:---------|:--------:|:-------:|:--------|:--------|
-| 1 | **Alice** | 95 | 🥇 | [GitHub](https://github.com) | ~pending~ |
-| 2 | *Bob* | 87 | 🥈 | [Telegram](https://t.me) | ==new== |
-| 3 | Charlie | 92 | 🥇 | [Google](https://google.com) | \`active\` |
-| 4 | Diana | 78 | 🥉 | [Docs](https://core.telegram.org) | ||spoiler|| |`;
-
-    await call("sendRichMessage", {
-      chat_id: chatId,
-      rich_message: { markdown },
-    });
-  } else if (cmd === "popup") {
-    // Table inside collapsible <details> block – acts like a popup
-    const markdown = `## 📊 Score Table
-
-<details open>
-<summary>📋 Click to toggle table</summary>
-
-| # | 🏷️ Name | 📊 Score | ⭐ Rank | 🔗 Link |
-|:--|:---------|:--------:|:-------:|:--------|
-| 1 | **Alice** | 95 | 🥇 | [GitHub](https://github.com) |
-| 2 | *Bob* | 87 | 🥈 | [Telegram](https://t.me) |
-| 3 | Charlie | 92 | 🥇 | [Google](https://google.com) |
-| 4 | Diana | 78 | 🥉 | [Docs](https://core.telegram.org) |
-
-</details>
-
-💡 _Table hidden inside collapsible block — click to expand!_`;
-
-    await call("sendRichMessage", {
-      chat_id: chatId,
-      rich_message: { markdown },
-    });
-  } else {
-    // Reply with plain text for anything else
-    await call("sendMessage", {
-      chat_id: chatId,
-      text: '🤖 Commands:\n• *what* — full table\n• *popup* — table in collapsible block',
-      parse_mode: "MarkdownV2",
-    });
-  }
+  await call("sendMessage", {
+    chat_id: chatId,
+    text: '🤖 Commands:\n• *what* — full table\n• *popup* — table with random button',
+    parse_mode: "MarkdownV2",
+  });
 }
 
 async function main() {
   console.log("🤖 Bot started! Waiting for messages...");
 
-  // Clear pending updates
   const init = await call("getUpdates", { offset: -1 });
   let offset = 0;
   if (init.ok && init.result.length > 0) {
@@ -83,13 +45,12 @@ async function main() {
   while (true) {
     try {
       const res = await getUpdates(offset);
-      if (res.ok && res.result.length > 0) {
-        for (const update of res.result) {
-          offset = update.update_id + 1;
-          if (update.message) {
-            await handleMessage(update.message);
-          }
-        }
+      if (!res.ok || !res.result.length) continue;
+
+      for (const u of res.result) {
+        offset = u.update_id + 1;
+        if (u.message) await handleMessage(u.message);
+        if (u.callback_query) await handleCallback(u.callback_query);
       }
     } catch (err) {
       console.error("Error:", err.message);
