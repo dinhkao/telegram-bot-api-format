@@ -23,7 +23,9 @@ async function handleMessage(msg) {
   const chatId = msg.chat.id;
   const text = msg.text || "";
 
-  if (text.trim().toLowerCase() === "what") {
+  const cmd = text.trim().toLowerCase();
+
+  if (cmd === "what") {
     // Rich Markdown table with header + inline formatting showcase
     const markdown = `| # | 🏷️ Name | 📊 Score | ⭐ Rank | 🔗 Link | 📝 Note |
 |:--|:---------|:--------:|:-------:|:--------|:--------|
@@ -36,11 +38,33 @@ async function handleMessage(msg) {
       chat_id: chatId,
       rich_message: { markdown },
     });
+  } else if (cmd === "popup") {
+    // Table inside collapsible <details> block – acts like a popup
+    const markdown = `## 📊 Score Table
+
+<details open>
+<summary>📋 Click to toggle table</summary>
+
+| # | 🏷️ Name | 📊 Score | ⭐ Rank | 🔗 Link |
+|:--|:---------|:--------:|:-------:|:--------|
+| 1 | **Alice** | 95 | 🥇 | [GitHub](https://github.com) |
+| 2 | *Bob* | 87 | 🥈 | [Telegram](https://t.me) |
+| 3 | Charlie | 92 | 🥇 | [Google](https://google.com) |
+| 4 | Diana | 78 | 🥉 | [Docs](https://core.telegram.org) |
+
+</details>
+
+💡 _Table hidden inside collapsible block — click to expand!_`;
+
+    await call("sendRichMessage", {
+      chat_id: chatId,
+      rich_message: { markdown },
+    });
   } else {
     // Reply with plain text for anything else
     await call("sendMessage", {
       chat_id: chatId,
-      text: '🤖 Send *"what"* to see a rich markdown table!',
+      text: '🤖 Commands:\n• *what* — full table\n• *popup* — table in collapsible block',
       parse_mode: "MarkdownV2",
     });
   }
