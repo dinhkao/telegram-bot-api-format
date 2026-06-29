@@ -24,13 +24,13 @@ async function handleMessage(msg) {
   const text = msg.text || "";
 
   if (text.trim().toLowerCase() === "what") {
-    // Rich Markdown table with header
-    const markdown = `| 🏷️ Name | 📊 Score | 📅 Date |
+    // Rich Markdown table with header + inline links
+    const markdown = `| 🏷️ Name | 📊 Score | 🔗 Link |
 |:---------|:--------:|:--------|
-| Alice    | 95       | 2026-06-01 |
-| Bob      | 87       | 2026-06-15 |
-| Charlie  | 92       | 2026-06-20 |
-| Diana    | 78       | 2026-06-25 |`;
+| Alice    | 95       | [GitHub](https://github.com) |
+| **Bob**      | **87**       | [Telegram](https://t.me) |
+| Charlie  | 92       | [Google](https://google.com) |
+| Diana    | 78       | [Docs](https://core.telegram.org) |`;
 
     await call("sendRichMessage", {
       chat_id: chatId,
